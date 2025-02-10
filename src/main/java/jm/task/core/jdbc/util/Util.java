@@ -1,32 +1,38 @@
 package jm.task.core.jdbc.util;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import jm.task.core.jdbc.model.User;
+import org.hibernate.SessionFactory;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.service.ServiceRegistry;
 
 public class Util {
 
-  private static final String DB_DRIVER = "com.mysql.cj.jdbc.Driver";
-  private static final String URL = "jdbc:mysql://localhost:3306/mydbtest";
-  private static final String USERNAME = "vladroot";
-  private static final String PASSWORD = "vladroot";
+  private static final SessionFactory sessionFactory = buildSessionFactory();
 
-  static {
+  private static SessionFactory buildSessionFactory() {
     try {
-      Class.forName(DB_DRIVER);
-    } catch (ClassNotFoundException e) {
-      throw new RuntimeException("Ошибка загрузки JDBC-драйвера!", e);
+      Configuration configuration = new Configuration();
+      configuration.setProperty("hibernate.connection.driver_class", "com.mysql.cj.jdbc.Driver");
+      configuration.setProperty("hibernate.connection.url", "jdbc:mysql://localhost:3306/mydbtest");
+      configuration.setProperty("hibernate.connection.username", "vladroot");
+      configuration.setProperty("hibernate.connection.password", "vladroot");
+      configuration.setProperty("hibernate.dialect", "org.hibernate.dialect.MySQL8Dialect");
+      configuration.setProperty("hibernate.show_sql", "true");
+      configuration.setProperty("hibernate.hbm2ddl.auto", "none");
+      configuration.addAnnotatedClass(User.class);
+
+      ServiceRegistry serviceRegistry = new StandardServiceRegistryBuilder()
+          .applySettings(configuration.getProperties()).build();
+
+      return configuration.buildSessionFactory(serviceRegistry);
+    } catch (Exception e) {
+      System.err.println("Ошибка при создании SessionFactory: " + e.getMessage());
+      throw new ExceptionInInitializerError(e);
     }
   }
 
-  public static Connection getConnection() {
-    try {
-      Connection connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
-      System.out.println("Connection OK");
-      return connection;
-    } catch (SQLException e) {
-      System.err.println("Ошибка подключения к БД: " + e.getMessage());
-      throw new RuntimeException("Не удалось установить соединение с БД", e);
-    }
+  public static SessionFactory getSessionFactory() {
+    return sessionFactory;
   }
 }
